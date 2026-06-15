@@ -1,0 +1,204 @@
+<div class="page">
+
+  <a routerLink="/customers" class="back-link">← Back to Customers</a>
+
+  <div class="page-header">
+    <div>
+      <h1>Add Customer</h1>
+      <p>Fill in the details below. Contact and bank info are optional.</p>
+    </div>
+  </div>
+
+  <div *ngIf="errorMessage" class="alert alert-danger">⚠ {{ errorMessage }}</div>
+
+  <!-- ── Section 1: Personal Info ── -->
+  <div class="card" style="margin-bottom:1.25rem">
+    <div class="card-header">
+      <div class="card-icon icon-blue">👤</div>
+      <h2>Personal Information</h2>
+    </div>
+    <div class="card-body" [formGroup]="customerForm">
+
+      <!-- Photo Upload -->
+      <div class="form-group" style="display:flex;align-items:center;gap:1.5rem;margin-bottom:1.5rem">
+        <div class="photo-upload-area" style="width:fit-content;padding:.75rem" (click)="triggerFileInput()">
+          <img *ngIf="previewUrl" [src]="previewUrl" class="photo-preview" style="margin-bottom:0" alt="preview" />
+          <div *ngIf="!previewUrl" class="photo-placeholder" style="margin-bottom:0">📷</div>
+          <input id="photoInput" type="file" accept=".jpg,.jpeg,.png" (change)="onPhotoSelected($event)" />
+        </div>
+        <div>
+          <div style="font-weight:500;margin-bottom:.25rem">Profile Photo</div>
+          <div style="font-size:.8rem;color:var(--text-muted)">JPG or PNG, max 5 MB</div>
+          <button type="button" class="btn btn-secondary btn-sm" style="margin-top:.5rem" (click)="triggerFileInput()">
+            Choose Photo
+          </button>
+          <div *ngIf="photoError" class="form-error" style="margin-top:.4rem">{{ photoError }}</div>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">First Name *</label>
+          <input formControlName="firstName" class="form-control"
+            [class.is-invalid]="isInvalid(customerForm, 'firstName')" />
+          <div *ngIf="isInvalid(customerForm, 'firstName')" class="form-error">{{ getError(customerForm, 'firstName') }}</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Last Name *</label>
+          <input formControlName="lastName" class="form-control"
+            [class.is-invalid]="isInvalid(customerForm, 'lastName')" />
+          <div *ngIf="isInvalid(customerForm, 'lastName')" class="form-error">{{ getError(customerForm, 'lastName') }}</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Middle Name</label>
+          <input formControlName="middleName" class="form-control"
+            [class.is-invalid]="isInvalid(customerForm, 'middleName')" />
+          <div *ngIf="isInvalid(customerForm, 'middleName')" class="form-error">{{ getError(customerForm, 'middleName') }}</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date of Birth</label>
+          <input type="date" formControlName="dateOfBirth" class="form-control"
+            [class.is-invalid]="isInvalid(customerForm, 'dateOfBirth')" />
+          <div *ngIf="isInvalid(customerForm, 'dateOfBirth')" class="form-error">{{ getError(customerForm, 'dateOfBirth') }}</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Gender</label>
+          <select formControlName="gender" class="form-select">
+            <option value="">Select gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Occupation</label>
+          <input formControlName="occupation" class="form-control"
+            [class.is-invalid]="isInvalid(customerForm, 'occupation')" />
+          <div *ngIf="isInvalid(customerForm, 'occupation')" class="form-error">{{ getError(customerForm, 'occupation') }}</div>
+        </div>
+      </div>
+
+      <div class="form-check">
+        <input type="checkbox" formControlName="isActive" id="isActive" />
+        <label for="isActive">Active customer</label>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Section 2: Contact Info ── -->
+  <div class="card" style="margin-bottom:1.25rem">
+    <div class="card-header">
+      <div class="card-icon icon-green">📞</div>
+      <h2>Contact Information <span style="font-weight:400;color:var(--text-muted);font-size:.85rem">&nbsp;— optional</span></h2>
+    </div>
+    <div class="card-body" [formGroup]="contactForm">
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Phone Number</label>
+          <input formControlName="phoneNumber" class="form-control" maxlength="10"
+            [class.is-invalid]="isInvalid(contactForm, 'phoneNumber')" />
+          <div *ngIf="isInvalid(contactForm, 'phoneNumber')" class="form-error">{{ getError(contactForm, 'phoneNumber') }}</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input formControlName="email" class="form-control"
+            [class.is-invalid]="isInvalid(contactForm, 'email')" />
+          <div *ngIf="isInvalid(contactForm, 'email')" class="form-error">{{ getError(contactForm, 'email') }}</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Address Line 1</label>
+        <input formControlName="addressLine1" class="form-control"
+          [class.is-invalid]="isInvalid(contactForm, 'addressLine1')" />
+        <div *ngIf="isInvalid(contactForm, 'addressLine1')" class="form-error">{{ getError(contactForm, 'addressLine1') }}</div>
+      </div>
+
+      <div class="form-grid-3">
+        <div class="form-group">
+          <label class="form-label">Postal Code</label>
+          <div style="position:relative">
+            <input formControlName="postalCode" class="form-control" maxlength="6"
+              [class.is-invalid]="isInvalid(contactForm, 'postalCode')"
+              (blur)="onPincodeChange()" />
+            <span *ngIf="pincodeLoading" class="spinner"
+              style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);width:14px;height:14px;border-width:2px"></span>
+          </div>
+          <div *ngIf="isInvalid(contactForm, 'postalCode')" class="form-error">{{ getError(contactForm, 'postalCode') }}</div>
+          <div *ngIf="pincodeError" class="form-error">{{ pincodeError }}</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">City <span style="color:var(--text-muted);font-weight:400">(auto-filled)</span></label>
+          <input formControlName="city" class="form-control"
+            [class.is-invalid]="isInvalid(contactForm, 'city')" />
+          <div *ngIf="isInvalid(contactForm, 'city')" class="form-error">{{ getError(contactForm, 'city') }}</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">State <span style="color:var(--text-muted);font-weight:400">(auto-filled)</span></label>
+          <input formControlName="state" class="form-control"
+            [class.is-invalid]="isInvalid(contactForm, 'state')" />
+          <div *ngIf="isInvalid(contactForm, 'state')" class="form-error">{{ getError(contactForm, 'state') }}</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Country</label>
+        <input formControlName="country" class="form-control"
+          [class.is-invalid]="isInvalid(contactForm, 'country')" />
+        <div *ngIf="isInvalid(contactForm, 'country')" class="form-error">{{ getError(contactForm, 'country') }}</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Section 3: Bank Details ── -->
+  <div class="card" style="margin-bottom:1.75rem">
+    <div class="card-header">
+      <div class="card-icon icon-amber">🏦</div>
+      <h2>Bank Details <span style="font-weight:400;color:var(--text-muted);font-size:.85rem">&nbsp;— optional</span></h2>
+    </div>
+    <div class="card-body" [formGroup]="bankForm">
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Bank Name</label>
+          <input formControlName="bankName" class="form-control"
+            [class.is-invalid]="isInvalid(bankForm, 'bankName')" />
+          <div *ngIf="isInvalid(bankForm, 'bankName')" class="form-error">{{ getError(bankForm, 'bankName') }}</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Branch Name</label>
+          <input formControlName="branchName" class="form-control"
+            [class.is-invalid]="isInvalid(bankForm, 'branchName')" />
+          <div *ngIf="isInvalid(bankForm, 'branchName')" class="form-error">{{ getError(bankForm, 'branchName') }}</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Account Number</label>
+          <input formControlName="accountNumber" class="form-control" maxlength="18"
+            [class.is-invalid]="isInvalid(bankForm, 'accountNumber')" />
+          <div *ngIf="isInvalid(bankForm, 'accountNumber')" class="form-error">{{ getError(bankForm, 'accountNumber') }}</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">IFSC Code</label>
+          <input formControlName="ifscCode" class="form-control" maxlength="11"
+            style="text-transform:uppercase"
+            [class.is-invalid]="isInvalid(bankForm, 'ifscCode')" />
+          <div *ngIf="isInvalid(bankForm, 'ifscCode')" class="form-error">{{ getError(bankForm, 'ifscCode') }}</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div style="display:flex;gap:.75rem;justify-content:flex-end">
+    <a routerLink="/customers" class="btn btn-secondary">Cancel</a>
+    <button class="btn btn-primary" (click)="submit()" [disabled]="submitting">
+      <span *ngIf="submitting" class="spinner" style="width:14px;height:14px;border-width:2px"></span>
+      {{ submitting ? 'Saving…' : 'Save Customer' }}
+    </button>
+  </div>
+
+</div>

@@ -1,0 +1,155 @@
+<div class="page">
+
+  <a routerLink="/customers" class="back-link">← Back to Customers</a>
+
+  <div *ngIf="loading" class="alert alert-info">
+    <span class="spinner" style="width:16px;height:16px;border-width:2px"></span>
+    Loading customer details…
+  </div>
+
+  <div *ngIf="errorMessage" class="alert alert-danger">⚠ {{ errorMessage }}</div>
+
+  <ng-container *ngIf="customer && !loading">
+
+    <!-- Hero -->
+    <div class="detail-hero">
+      <img *ngIf="customer.imageUrl"
+           [src]="'https://localhost:7273' + customer.imageUrl"
+           class="detail-avatar" alt="profile photo" />
+      <div *ngIf="!customer.imageUrl" class="detail-avatar-placeholder">{{ initials }}</div>
+
+      <div class="detail-hero-info" style="flex:1">
+        <h2>{{ fullName }}</h2>
+        <p>{{ customer.occupation || 'No occupation listed' }}</p>
+        <span class="badge" [ngClass]="customer.isActive ? 'badge-success' : 'badge-secondary'">
+          {{ customer.isActive ? 'Active' : 'Inactive' }}
+        </span>
+      </div>
+
+      <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-self:flex-start">
+        <a [routerLink]="['/customers/edit', customer.customerId]" class="btn btn-secondary btn-sm">Edit</a>
+        <a routerLink="/customers" class="btn btn-ghost btn-sm">← All Customers</a>
+      </div>
+    </div>
+
+    <!-- Personal Info -->
+    <div class="card" style="margin-bottom:1.25rem">
+      <div class="card-header">
+        <div class="card-icon icon-blue">👤</div>
+        <h2>Personal Information</h2>
+      </div>
+      <div class="card-body">
+        <div class="detail-grid">
+          <div class="detail-field">
+            <label>Customer ID</label>
+            <span>#{{ customer.customerId }}</span>
+          </div>
+          <div class="detail-field">
+            <label>Gender</label>
+            <span>{{ customer.gender || '—' }}</span>
+          </div>
+          <div class="detail-field">
+            <label>Date of Birth</label>
+            <span>{{ formatDate(customer.dateOfBirth) }}</span>
+          </div>
+          <div class="detail-field">
+            <label>Occupation</label>
+            <span>{{ customer.occupation || '—' }}</span>
+          </div>
+          <div class="detail-field">
+            <label>Created</label>
+            <span>{{ formatDate(customer.createdAt) }}</span>
+          </div>
+          <div class="detail-field">
+            <label>Last Updated</label>
+            <span>{{ formatDate(customer.updatedAt) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contact Info -->
+    <div class="card" style="margin-bottom:1.25rem">
+      <div class="card-header">
+        <div class="card-icon icon-green">📞</div>
+        <h2>Contact Information</h2>
+      </div>
+      <div class="card-body">
+        <div *ngIf="contact; else noContact">
+          <div class="detail-grid">
+            <div class="detail-field">
+              <label>Phone</label>
+              <span>{{ contact.phoneNumber || '—' }}</span>
+            </div>
+            <div class="detail-field">
+              <label>Email</label>
+              <span>{{ contact.email || '—' }}</span>
+            </div>
+            <div class="detail-field" style="grid-column:1/-1">
+              <label>Address</label>
+              <span>{{ contact.addressLine1 || '—' }}</span>
+            </div>
+            <div class="detail-field">
+              <label>City</label>
+              <span>{{ contact.city || '—' }}</span>
+            </div>
+            <div class="detail-field">
+              <label>State</label>
+              <span>{{ contact.state || '—' }}</span>
+            </div>
+            <div class="detail-field">
+              <label>Country</label>
+              <span>{{ contact.country || '—' }}</span>
+            </div>
+            <div class="detail-field">
+              <label>Postal Code</label>
+              <span>{{ contact.postalCode || '—' }}</span>
+            </div>
+          </div>
+        </div>
+        <ng-template #noContact>
+          <div class="empty-state" style="padding:1.5rem">
+            <p>No contact information on record.</p>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+
+    <!-- Bank Details -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon icon-amber">🏦</div>
+        <h2>Bank Details</h2>
+      </div>
+      <div class="card-body">
+        <div *ngIf="bankDetail; else noBank">
+          <div class="detail-grid">
+            <div class="detail-field">
+              <label>Bank Name</label>
+              <span>{{ bankDetail.bankName || '—' }}</span>
+            </div>
+            <div class="detail-field">
+              <label>Branch</label>
+              <span>{{ bankDetail.branchName || '—' }}</span>
+            </div>
+            <div class="detail-field">
+              <label>Account Number</label>
+              <span style="font-family:monospace">{{ bankDetail.accountNumber || '—' }}</span>
+            </div>
+            <div class="detail-field">
+              <label>IFSC Code</label>
+              <span style="font-family:monospace">{{ bankDetail.ifscCode || '—' }}</span>
+            </div>
+          </div>
+        </div>
+        <ng-template #noBank>
+          <div class="empty-state" style="padding:1.5rem">
+            <p>No bank details on record.</p>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+
+  </ng-container>
+
+</div>

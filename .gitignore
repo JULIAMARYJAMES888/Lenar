@@ -1,0 +1,11 @@
+bin/
+obj/
+.vs/
+
+node_modules/
+
+.angular/
+dist/
+
+*.user
+*.suo

@@ -1,0 +1,19 @@
+.customer-list {
+  min-height: 100vh;
+}
+
+.customer-list h1 {
+  font-weight: 600;
+}
+
+.customer-list .table {
+  margin-bottom: 0;
+}
+
+.customer-list .badge {
+  font-size: 0.85rem;
+}
+
+.customer-list input.form-control {
+  max-width: 360px;
+}
