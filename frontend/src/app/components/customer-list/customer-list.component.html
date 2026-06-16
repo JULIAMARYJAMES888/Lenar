@@ -3,10 +3,26 @@
   <!-- Header -->
   <div class="page-header">
     <div>
-      <h1>Customers</h1>
-      <p>{{ customers.length }} total record{{ customers.length !== 1 ? 's' : '' }}</p>
+      <h1>Customer Directory</h1>
+      <p>Manage profiles, banking details and account associations.</p>
     </div>
-    <a routerLink="/customers/add" class="btn btn-primary">+ Add Customer</a>
+    <a routerLink="/customers/add" class="btn btn-gold">+ Add Customer</a>
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="stat-cards">
+    <div class="stat-card total">
+      <div class="stat-label">Total</div>
+      <div class="stat-value">{{ totalCount }}</div>
+    </div>
+    <div class="stat-card active">
+      <div class="stat-label">Active</div>
+      <div class="stat-value">{{ activeCount }}</div>
+    </div>
+    <div class="stat-card inactive">
+      <div class="stat-label">Inactive</div>
+      <div class="stat-value">{{ inactiveCount }}</div>
+    </div>
   </div>
 
   <!-- Error -->
@@ -16,33 +32,40 @@
   </div>
 
   <!-- Toolbar -->
-  <div class="toolbar">
-    <div class="search-wrap">
-      <span class="search-icon">🔍</span>
-      <input
-        type="search"
-        class="form-control"
-        placeholder="Search by name, ID, occupation…"
-        [(ngModel)]="searchTerm"
-        (ngModelChange)="applyFilter()"
-      />
-    </div>
-
-    <select class="filter-select" [(ngModel)]="filterGender" (ngModelChange)="applyFilter()">
-      <option value="">All Genders</option>
-      <option value="Male">Male</option>
-      <option value="Female">Female</option>
-      <option value="Other">Other</option>
-    </select>
-
-    <select class="filter-select" [(ngModel)]="filterStatus" (ngModelChange)="applyFilter()">
-      <option value="">All Status</option>
-      <option value="active">Active</option>
-      <option value="inactive">Inactive</option>
-    </select>
-
-    <button *ngIf="hasFilters" class="btn btn-ghost btn-sm" (click)="clearFilters()">✕ Clear</button>
+  <!-- Toolbar -->
+<div class="toolbar">
+  <div class="search-wrap">
+    <span class="search-icon" style="font-size:.85rem">⌕</span>
+    <input
+      type="search"
+      class="form-control"
+      placeholder="Search by name, ID, occupation…"
+      [(ngModel)]="searchTerm"
+      (ngModelChange)="applyFilter()"
+    />
   </div>
+
+  <select class="filter-select" [(ngModel)]="filterStatus" (ngModelChange)="applyFilter()">
+    <option value="">Filter By</option>
+    <option value="active">Active</option>
+    <option value="inactive">Inactive</option>
+    <option value="male">Male</option>
+    <option value="female">Female</option>
+    <option value="other">Other</option>
+  </select>
+
+  <select class="filter-select" [(ngModel)]="sortPreset" (ngModelChange)="applyPresetSort()">
+    <option value="">Sort By</option>
+    <option value="name-asc">Name A → Z</option>
+    <option value="name-desc">Name Z → A</option>
+    <option value="id-asc">ID Ascending</option>
+    <option value="id-desc">ID Descending</option>
+  </select>
+
+  <span style="margin-left:auto;font-size:.82rem;color:var(--text-muted);font-weight:500">
+    {{ filteredCustomers.length }} result{{ filteredCustomers.length !== 1 ? 's' : '' }}
+  </span>
+</div>
 
   <!-- Table -->
   <div class="table-wrap">
@@ -51,9 +74,9 @@
     <table *ngIf="loading">
       <tbody>
         <tr class="loading-row">
-          <td colspan="7">
+          <td colspan="6">
             <span class="spinner"></span>
-            <span style="margin-left:.75rem;color:var(--text-muted)">Loading customers…</span>
+            <span style="margin-left:.75rem">Loading customers…</span>
           </td>
         </tr>
       </tbody>
@@ -61,11 +84,15 @@
 
     <!-- Empty -->
     <div *ngIf="!loading && filteredCustomers.length === 0" class="empty-state">
-      <div style="font-size:2.5rem">👤</div>
-      <p *ngIf="hasFilters">No customers match your filters.
+      <div style="font-size:3rem">👤</div>
+      <p *ngIf="hasFilters">
+        No customers match your filters.
         <button class="btn btn-ghost btn-sm" (click)="clearFilters()">Clear filters</button>
       </p>
-      <p *ngIf="!hasFilters">No customers yet. <a routerLink="/customers/add" style="color:var(--primary)">Add the first one.</a></p>
+      <p *ngIf="!hasFilters">
+        No customers yet.
+        <a routerLink="/customers/add" style="color:var(--purple-600);font-weight:600">Add the first one.</a>
+      </p>
     </div>
 
     <!-- Data -->
@@ -75,15 +102,14 @@
           <th (click)="setSort('customerId')" [class.sorted]="sortColumn==='customerId'">
             ID <span class="sort-icon">{{ sortIcon('customerId') }}</span>
           </th>
-          <th>Photo</th>
           <th (click)="setSort('firstName')" [class.sorted]="sortColumn==='firstName'">
-            Name <span class="sort-icon">{{ sortIcon('firstName') }}</span>
-          </th>
-          <th (click)="setSort('gender')" [class.sorted]="sortColumn==='gender'">
-            Gender <span class="sort-icon">{{ sortIcon('gender') }}</span>
+            Customer <span class="sort-icon">{{ sortIcon('firstName') }}</span>
           </th>
           <th (click)="setSort('occupation')" [class.sorted]="sortColumn==='occupation'">
             Occupation <span class="sort-icon">{{ sortIcon('occupation') }}</span>
+          </th>
+          <th (click)="setSort('gender')" [class.sorted]="sortColumn==='gender'">
+            Gender <span class="sort-icon">{{ sortIcon('gender') }}</span>
           </th>
           <th (click)="setSort('isActive')" [class.sorted]="sortColumn==='isActive'">
             Status <span class="sort-icon">{{ sortIcon('isActive') }}</span>
@@ -93,17 +119,28 @@
       </thead>
       <tbody>
         <tr *ngFor="let c of filteredCustomers">
-          <td style="color:var(--text-muted);font-size:.8rem">#{{ c.customerId }}</td>
           <td>
-            <img *ngIf="c.imageUrl" [src]="'https://localhost:7273' + c.imageUrl" class="avatar" alt="photo" />
-            <div *ngIf="!c.imageUrl" class="avatar-placeholder">{{ initials(c) }}</div>
+            <span style="font-size:.78rem;font-weight:700;color:var(--text-muted);
+                         background:var(--purple-50);padding:.2rem .6rem;
+                         border-radius:99px;border:1px solid var(--border)">
+              #{{ c.customerId }}
+            </span>
           </td>
           <td>
-            <div style="font-weight:500">{{ c.firstName }} {{ c.lastName }}</div>
-            <div *ngIf="c.middleName" style="font-size:.8rem;color:var(--text-muted)">{{ c.middleName }}</div>
-          </td>
-          <td>{{ c.gender || '—' }}</td>
-          <td>{{ c.occupation || '—' }}</td>
+              <div style="display:flex;align-items:center;gap:.75rem">
+              <img *ngIf="c.imageUrl"
+         [src]="'https://localhost:7273' + c.imageUrl"
+         class="avatar" alt="photo" />
+    <div *ngIf="!c.imageUrl" class="avatar-placeholder">{{ initials(c) }}</div>
+    <div>
+      <div style="font-weight:700;color:var(--text-primary);font-size:.92rem">
+        {{ c.firstName }} {{ c.middleName ? c.middleName + ' ' : '' }}{{ c.lastName }}
+      </div>
+    </div>
+  </div>
+</td>
+          <td style="color:var(--text-secondary)">{{ c.occupation || '—' }}</td>
+          <td style="color:var(--text-secondary)">{{ c.gender || '—' }}</td>
           <td>
             <span class="badge" [ngClass]="c.isActive ? 'badge-success' : 'badge-secondary'">
               {{ c.isActive ? 'Active' : 'Inactive' }}
@@ -111,8 +148,10 @@
           </td>
           <td style="text-align:right">
             <button class="btn btn-ghost btn-sm" (click)="viewCustomer(c.customerId!)">View</button>
-            <button class="btn btn-secondary btn-sm" style="margin:0 .4rem" (click)="editCustomer(c.customerId!)">Edit</button>
-            <button class="btn btn-danger btn-sm" (click)="deleteCustomer(c.customerId!)">Delete</button>
+            <button class="btn btn-secondary btn-sm" style="margin:0 .4rem"
+                    (click)="editCustomer(c.customerId!)">Edit</button>
+            <button class="btn btn-danger btn-sm"
+                    (click)="deleteCustomer(c.customerId!)">Delete</button>
           </td>
         </tr>
       </tbody>
@@ -120,8 +159,9 @@
 
     <!-- Footer -->
     <div *ngIf="!loading && filteredCustomers.length > 0"
-         style="padding:.75rem 1rem;font-size:.8rem;color:var(--text-muted);border-top:1px solid var(--border)">
-      Showing {{ filteredCustomers.length }} of {{ customers.length }} customers
+         style="padding:.85rem 1.25rem;font-size:.8rem;color:var(--text-muted);
+                border-top:1px solid var(--border);font-weight:500">
+      Showing {{ filteredCustomers.length }} of {{ totalCount }} customers
     </div>
 
   </div>

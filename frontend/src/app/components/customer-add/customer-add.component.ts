@@ -7,7 +7,6 @@ import { CustomerService } from '../../services/customer.service';
 import { CustomerContactService } from '../../services/customer-contact.service';
 import { CustomerBankDetailService } from '../../services/customer-bank-detail.service';
 
-// Custom validators
 function phoneValidator(control: AbstractControl): ValidationErrors | null {
   if (!control.value) return null;
   return /^[6-9]\d{9}$/.test(control.value.replace(/\s+/g, '')) ? null : { invalidPhone: true };
@@ -34,12 +33,15 @@ function nameValidator(control: AbstractControl): ValidationErrors | null {
 }
 
 function dobValidator(control: AbstractControl): ValidationErrors | null {
-  if (!control.value) return null;
+  if (!control.value) return { required: true };
   const dob = new Date(control.value);
   const today = new Date();
-  const age = today.getFullYear() - dob.getFullYear();
+  today.setHours(0, 0, 0, 0);
   if (dob >= today) return { futureDate: true };
-  if (age > 120) return { invalidDob: true };
+  if (today.getFullYear() - dob.getFullYear() > 120) return { invalidDob: true };
+  const age18Date = new Date(dob);
+  age18Date.setFullYear(age18Date.getFullYear() + 18);
+  if (age18Date > today) return { underage: true };
   return null;
 }
 
@@ -74,14 +76,15 @@ export class CustomerAddComponent {
     private http: HttpClient
   ) {
     this.customerForm = this.fb.group({
-      firstName:   ['', [Validators.required, nameValidator]],
-      middleName:  ['', [nameValidator]],
-      lastName:    ['', [Validators.required, nameValidator]],
-      dateOfBirth: ['', [dobValidator]],
-      gender:      [''],
-      occupation:  ['', [Validators.minLength(2)]],
-      isActive:    [true]
-    });
+  firstName:   ['', [Validators.required, nameValidator]],
+  middleName:  ['', [nameValidator]],
+  lastName:    ['', [Validators.required, nameValidator]],
+  dateOfBirth: ['', [Validators.required, dobValidator]],
+  gender:      ['', [Validators.required]],
+  occupation:  ['', [Validators.required, Validators.minLength(2)]],
+  isActive:    [true],
+  imageUrl:    ['']
+  });
 
     this.contactForm = this.fb.group({
       phoneNumber:  ['', [phoneValidator]],
@@ -132,20 +135,14 @@ export class CustomerAddComponent {
   onPincodeChange(): void {
     const pincode = this.contactForm.get('postalCode')?.value;
     if (!/^\d{6}$/.test(pincode)) return;
-
     this.pincodeLoading = true;
     this.pincodeError = '';
-
     this.http.get<any[]>(`https://api.postalpincode.in/pincode/${pincode}`).subscribe({
       next: (res) => {
         this.pincodeLoading = false;
         if (res[0]?.Status === 'Success') {
           const po = res[0].PostOffice[0];
-          this.contactForm.patchValue({
-            city: po.District,
-            state: po.State,
-            country: 'India'
-          });
+          this.contactForm.patchValue({ city: po.District, state: po.State, country: 'India' });
         } else {
           this.pincodeError = 'Pincode not found.';
         }
@@ -177,7 +174,7 @@ export class CustomerAddComponent {
   getError(form: FormGroup, field: string): string {
     const c = form.get(field);
     if (!c || !c.errors || !c.touched) return '';
-    if (c.errors['required']) return `This field is required.`;
+    if (c.errors['required']) return 'This field is required.';
     if (c.errors['invalidName']) return 'Only letters, spaces, hyphens and apostrophes allowed.';
     if (c.errors['invalidPhone']) return 'Enter a valid 10-digit Indian mobile number.';
     if (c.errors['email']) return 'Enter a valid email address.';
@@ -185,80 +182,40 @@ export class CustomerAddComponent {
     if (c.errors['invalidAccount']) return 'Account number must be 9–18 digits.';
     if (c.errors['invalidPostal']) return 'Enter a valid 6-digit pincode.';
     if (c.errors['futureDate']) return 'Date of birth cannot be in the future.';
+    if (c.errors['underage']) return 'Customer must be at least 18 years old.';
     if (c.errors['invalidDob']) return 'Enter a valid date of birth.';
     if (c.errors['minlength']) return `Minimum ${c.errors['minlength'].requiredLength} characters required.`;
     return 'Invalid value.';
   }
 
   submit(): void {
-    if (this.customerForm.invalid) {
-      this.customerForm.markAllAsTouched();
-      return;
-    }
-    if (this.contactForm.invalid) {
-      this.contactForm.markAllAsTouched();
-      return;
-    }
-    if (this.bankForm.invalid) {
-      this.bankForm.markAllAsTouched();
-      return;
-    }
+    this.customerForm.markAllAsTouched();
+    this.contactForm.markAllAsTouched();
+    this.bankForm.markAllAsTouched();
+
+    if (this.customerForm.invalid || this.contactForm.invalid || this.bankForm.invalid) return;
 
     this.submitting = true;
     this.errorMessage = '';
 
-    this.customerService.createCustomer(this.customerForm.value).subscribe({
+    // Fix IFSC case before sending
+    const customerData = this.customerForm.value;
+    const bankData = {
+      ...this.bankForm.value,
+      ifscCode: this.bankForm.value.ifscCode?.toUpperCase()
+    };
+
+    this.customerService.createCustomer(customerData).subscribe({
       next: (created: any) => {
-        const customerId = created?.customerId ?? null;
-
-        const afterCustomer = (id: number | null) => {
-          const tasks: Promise<void>[] = [];
-
-          if (id && this.hasContactData) {
-            const contact = { ...this.contactForm.value, customerId: id };
-            tasks.push(new Promise((res, rej) =>
-              this.contactService.createContact(contact).subscribe({ next: () => res(), error: rej })
-            ));
-          }
-
-          if (id && this.hasBankData) {
-            const bank = { ...this.bankForm.value, customerId: id };
-            tasks.push(new Promise((res, rej) =>
-              this.bankService.createBankDetail(bank).subscribe({ next: () => res(), error: rej })
-            ));
-          }
-
-          if (id && this.selectedFile) {
-            const fd = new FormData();
-            fd.append('file', this.selectedFile);
-            tasks.push(new Promise((res, rej) =>
-              this.customerService.uploadPhoto(id, fd).subscribe({ next: () => res(), error: rej })
-            ));
-          }
-
-          Promise.all(tasks).then(() => {
-            this.submitting = false;
-            this.router.navigate(['/customers']);
-          }).catch((err) => {
-            console.error(err);
-            this.submitting = false;
-            this.errorMessage = 'Customer created but some details failed to save.';
-            this.cdr.detectChanges();
-            setTimeout(() => this.router.navigate(['/customers']), 2500);
-          });
-        };
-
-        if (customerId) {
-          afterCustomer(customerId);
-        } else {
-          this.customerService.getCustomers().subscribe({
-            next: (list) => {
-              const latest = list.sort((a, b) => (b.customerId ?? 0) - (a.customerId ?? 0))[0];
-              afterCustomer(latest?.customerId ?? null);
-            },
-            error: () => afterCustomer(null)
-          });
-        }
+        // API returns string — fetch latest customer to get ID
+        this.customerService.getCustomers().subscribe({
+          next: (list) => {
+            const latest = list.sort((a, b) => (b.customerId ?? 0) - (a.customerId ?? 0))[0];
+            const id = latest?.customerId ?? null;
+            this.saveRelated(id, bankData);
+          },
+          error: () => this.saveRelated(null, bankData)
+        });
       },
       error: (err) => {
         console.error(err);
@@ -266,6 +223,43 @@ export class CustomerAddComponent {
         this.errorMessage = 'Failed to create customer. Please try again.';
         this.cdr.detectChanges();
       }
+    });
+  }
+
+  private saveRelated(id: number | null, bankData: any): void {
+    const tasks: Promise<void>[] = [];
+
+    if (id && this.hasContactData) {
+      const contact = { ...this.contactForm.value, customerId: id };
+      tasks.push(new Promise((res, rej) =>
+        this.contactService.createContact(contact).subscribe({ next: () => res(), error: rej })
+      ));
+    }
+
+    if (id && this.hasBankData) {
+      const bank = { ...bankData, customerId: id };
+      tasks.push(new Promise((res, rej) =>
+        this.bankService.createBankDetail(bank).subscribe({ next: () => res(), error: rej })
+      ));
+    }
+
+    if (id && this.selectedFile) {
+      const fd = new FormData();
+      fd.append('file', this.selectedFile);
+      tasks.push(new Promise((res, rej) =>
+        this.customerService.uploadPhoto(id, fd).subscribe({ next: () => res(), error: rej })
+      ));
+    }
+
+    Promise.all(tasks).then(() => {
+      this.submitting = false;
+      this.router.navigate(['/customers']);
+    }).catch((err) => {
+      console.error(err);
+      this.submitting = false;
+      this.errorMessage = 'Customer created but some details failed to save.';
+      this.cdr.detectChanges();
+      setTimeout(() => this.router.navigate(['/customers']), 2500);
     });
   }
 }

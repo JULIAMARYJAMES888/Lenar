@@ -17,8 +17,8 @@ export class CustomerListComponent implements OnInit {
   filteredCustomers: Customer[] = [];
 
   searchTerm = '';
-  filterGender = '';
   filterStatus = '';
+  sortPreset = '';
 
   sortColumn: keyof Customer | '' = '';
   sortDirection: 'asc' | 'desc' = 'asc';
@@ -32,9 +32,7 @@ export class CustomerListComponent implements OnInit {
     private cdr: ChangeDetectorRef
   ) {}
 
-  ngOnInit(): void {
-    this.loadCustomers();
-  }
+  ngOnInit(): void { this.loadCustomers(); }
 
   private loadCustomers(): void {
     this.loading = true;
@@ -54,6 +52,10 @@ export class CustomerListComponent implements OnInit {
     });
   }
 
+  get totalCount():    number { return this.customers.length; }
+  get activeCount():   number { return this.customers.filter(c => c.isActive).length; }
+  get inactiveCount(): number { return this.customers.filter(c => !c.isActive).length; }
+
   applyFilter(): void {
     const term = this.searchTerm.trim().toLowerCase();
     let result = [...this.customers];
@@ -68,14 +70,11 @@ export class CustomerListComponent implements OnInit {
       );
     }
 
-    if (this.filterGender) {
-      result = result.filter(c => c.gender === this.filterGender);
-    }
-
-    if (this.filterStatus !== '') {
-      const isActive = this.filterStatus === 'active';
-      result = result.filter(c => c.isActive === isActive);
-    }
+    if (this.filterStatus === 'active')   result = result.filter(c => c.isActive);
+    if (this.filterStatus === 'inactive') result = result.filter(c => !c.isActive);
+    if (this.filterStatus === 'male')     result = result.filter(c => c.gender?.toLowerCase() === 'male');
+    if (this.filterStatus === 'female')   result = result.filter(c => c.gender?.toLowerCase() === 'female');
+    if (this.filterStatus === 'other')    result = result.filter(c => c.gender?.toLowerCase() === 'other');
 
     if (this.sortColumn) {
       result.sort((a, b) => {
@@ -89,6 +88,17 @@ export class CustomerListComponent implements OnInit {
     }
 
     this.filteredCustomers = result;
+  }
+
+  applyPresetSort(): void {
+    switch (this.sortPreset) {
+      case 'name-asc':  this.sortColumn = 'firstName';  this.sortDirection = 'asc';  break;
+      case 'name-desc': this.sortColumn = 'firstName';  this.sortDirection = 'desc'; break;
+      case 'id-asc':    this.sortColumn = 'customerId'; this.sortDirection = 'asc';  break;
+      case 'id-desc':   this.sortColumn = 'customerId'; this.sortDirection = 'desc'; break;
+      default:          this.sortColumn = '';            this.sortDirection = 'asc';
+    }
+    this.applyFilter();
   }
 
   setSort(col: keyof Customer): void {
@@ -108,23 +118,23 @@ export class CustomerListComponent implements OnInit {
 
   clearFilters(): void {
     this.searchTerm = '';
-    this.filterGender = '';
     this.filterStatus = '';
+    this.sortPreset = '';
     this.sortColumn = '';
     this.sortDirection = 'asc';
     this.applyFilter();
   }
 
   get hasFilters(): boolean {
-    return !!(this.searchTerm || this.filterGender || this.filterStatus);
+    return !!(this.searchTerm || this.filterStatus);
   }
 
   initials(c: Customer): string {
     return ((c.firstName?.[0] ?? '') + (c.lastName?.[0] ?? '')).toUpperCase();
   }
 
-  viewCustomer(id: number): void { this.router.navigate(['/customers', id]); }
-  editCustomer(id: number): void { this.router.navigate(['/customers/edit', id]); }
+  viewCustomer(id: number):   void { this.router.navigate(['/customers', id]); }
+  editCustomer(id: number):   void { this.router.navigate(['/customers/edit', id]); }
 
   deleteCustomer(id: number): void {
     if (!confirm('Delete this customer? This cannot be undone.')) return;

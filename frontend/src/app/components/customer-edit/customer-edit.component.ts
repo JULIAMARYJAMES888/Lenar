@@ -36,11 +36,15 @@ function nameValidator(control: AbstractControl): ValidationErrors | null {
 }
 
 function dobValidator(control: AbstractControl): ValidationErrors | null {
-  if (!control.value) return null;
+  if (!control.value) return { required: true };
   const dob = new Date(control.value);
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
   if (dob >= today) return { futureDate: true };
   if (today.getFullYear() - dob.getFullYear() > 120) return { invalidDob: true };
+  const age18Date = new Date(dob);
+  age18Date.setFullYear(age18Date.getFullYear() + 18);
+  if (age18Date > today) return { underage: true };
   return null;
 }
 
@@ -89,9 +93,9 @@ export class CustomerEditComponent implements OnInit {
       firstName:   ['', [Validators.required, nameValidator]],
       middleName:  ['', [nameValidator]],
       lastName:    ['', [Validators.required, nameValidator]],
-      dateOfBirth: ['', [dobValidator]],
-      gender:      [''],
-      occupation:  ['', [Validators.minLength(2)]],
+      dateOfBirth: ['', [Validators.required, dobValidator]],
+      gender:      ['', [Validators.required]],
+      occupation:  ['', [Validators.required, Validators.minLength(2)]],
       isActive:    [true],
       imageUrl:    ['']
     });
@@ -141,7 +145,11 @@ export class CustomerEditComponent implements OnInit {
             const b = banks.find(x => x.customerId === this.customerId);
             if (b) {
               this.existingBankId = b.bankDetailId ?? null;
-              this.bankForm.patchValue(b);
+              // uppercase IFSC when patching to avoid validator mismatch
+              this.bankForm.patchValue({
+                ...b,
+                ifscCode: b.ifscCode?.toUpperCase()
+              });
             }
             this.cdr.detectChanges();
           }
@@ -196,20 +204,14 @@ export class CustomerEditComponent implements OnInit {
   onPincodeChange(): void {
     const pincode = this.contactForm.get('postalCode')?.value;
     if (!/^\d{6}$/.test(pincode)) return;
-
     this.pincodeLoading = true;
     this.pincodeError = '';
-
     this.http.get<any[]>(`https://api.postalpincode.in/pincode/${pincode}`).subscribe({
       next: (res) => {
         this.pincodeLoading = false;
         if (res[0]?.Status === 'Success') {
           const po = res[0].PostOffice[0];
-          this.contactForm.patchValue({
-            city: po.District,
-            state: po.State,
-            country: 'India'
-          });
+          this.contactForm.patchValue({ city: po.District, state: po.State, country: 'India' });
         } else {
           this.pincodeError = 'Pincode not found.';
         }
@@ -239,27 +241,27 @@ export class CustomerEditComponent implements OnInit {
     if (c.errors['invalidAccount']) return 'Account number must be 9–18 digits.';
     if (c.errors['invalidPostal']) return 'Enter a valid 6-digit pincode.';
     if (c.errors['futureDate']) return 'Date of birth cannot be in the future.';
+    if (c.errors['underage']) return 'Customer must be at least 18 years old.';
     if (c.errors['invalidDob']) return 'Enter a valid date of birth.';
     if (c.errors['minlength']) return `Minimum ${c.errors['minlength'].requiredLength} characters required.`;
     return 'Invalid value.';
   }
 
   submit(): void {
-    if (this.customerForm.invalid) {
-      this.customerForm.markAllAsTouched();
-      return;
-    }
-    if (this.contactForm.invalid) {
-      this.contactForm.markAllAsTouched();
-      return;
-    }
-    if (this.bankForm.invalid) {
-      this.bankForm.markAllAsTouched();
-      return;
-    }
+    this.customerForm.markAllAsTouched();
+    this.contactForm.markAllAsTouched();
+    this.bankForm.markAllAsTouched();
+
+    if (this.customerForm.invalid || this.contactForm.invalid || this.bankForm.invalid) return;
 
     this.submitting = true;
     this.errorMessage = '';
+
+    // Fix IFSC case before sending
+    const bankData = {
+      ...this.bankForm.value,
+      ifscCode: this.bankForm.value.ifscCode?.toUpperCase()
+    };
 
     this.customerService.updateCustomer(this.customerId, this.customerForm.value).subscribe({
       next: () => {
@@ -280,10 +282,9 @@ export class CustomerEditComponent implements OnInit {
           }
         }
 
-        const bv = this.bankForm.value;
-        const hasBank = !!(bv.bankName || bv.accountNumber || bv.ifscCode);
+        const hasBank = !!(bankData.bankName || bankData.accountNumber || bankData.ifscCode);
         if (hasBank) {
-          const bank = { ...bv, customerId: this.customerId };
+          const bank = { ...bankData, customerId: this.customerId };
           if (this.existingBankId) {
             tasks.push(new Promise((res, rej) =>
               this.bankService.updateBankDetail(this.existingBankId!, bank).subscribe({ next: () => res(), error: rej })
