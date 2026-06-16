@@ -37,31 +37,31 @@ export class CustomerService {
     );
   }
 
-  createCustomer(customer: Customer): Observable<Customer> {
-    console.log('Creating customer:', customer);
-    return this.http.post<Customer>(this.apiUrl, customer).pipe(
-      tap((data) => {
-        console.log('✓ Customer created:', data);
-      }),
-      catchError((error) => {
-        console.error('✗ Error creating customer:', error);
-        throw error;
-      })
-    );
-  }
+  createCustomer(customer: Customer): Observable<any> {
+  console.log('Creating customer:', customer);
+  return this.http.post(this.apiUrl, customer, { responseType: 'text' }).pipe(
+    tap((data) => {
+      console.log('✓ Customer created:', data);
+    }),
+    catchError((error) => {
+      console.error('✗ Error creating customer:', error);
+      throw error;
+    })
+  );
+}
 
-  updateCustomer(id: number, customer: Customer): Observable<void> {
-    console.log('Updating customer:', id, customer);
-    return this.http.put<void>(`${this.apiUrl}/${id}`, customer).pipe(
-      tap(() => {
-        console.log('✓ Customer updated:', id);
-      }),
-      catchError((error) => {
-        console.error('✗ Error updating customer:', error);
-        throw error;
-      })
-    );
-  }
+  updateCustomer(id: number, customer: Customer): Observable<any> {
+  console.log('Updating customer:', id, customer);
+  return this.http.put(`${this.apiUrl}/${id}`, customer, { responseType: 'text' }).pipe(
+    tap(() => {
+      console.log('✓ Customer updated:', id);
+    }),
+    catchError((error) => {
+      console.error('✗ Error updating customer:', error);
+      throw error;
+    })
+  );
+}
 
   deleteCustomer(id: number): Observable<void> {
     console.log('Deleting customer:', id);

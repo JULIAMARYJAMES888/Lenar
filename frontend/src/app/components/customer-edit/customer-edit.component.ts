@@ -69,6 +69,7 @@ export class CustomerEditComponent implements OnInit {
   errorMessage = '';
   pincodeLoading = false;
   pincodeError = '';
+  bankMismatchWarning = '';
 
   selectedFile: File | null = null;
   previewUrl: string | null = null;
@@ -145,7 +146,6 @@ export class CustomerEditComponent implements OnInit {
             const b = banks.find(x => x.customerId === this.customerId);
             if (b) {
               this.existingBankId = b.bankDetailId ?? null;
-              // uppercase IFSC when patching to avoid validator mismatch
               this.bankForm.patchValue({
                 ...b,
                 ifscCode: b.ifscCode?.toUpperCase()
@@ -202,27 +202,78 @@ export class CustomerEditComponent implements OnInit {
   }
 
   onPincodeChange(): void {
-    const pincode = this.contactForm.get('postalCode')?.value;
-    if (!/^\d{6}$/.test(pincode)) return;
-    this.pincodeLoading = true;
-    this.pincodeError = '';
-    this.http.get<any[]>(`https://api.postalpincode.in/pincode/${pincode}`).subscribe({
-      next: (res) => {
-        this.pincodeLoading = false;
-        if (res[0]?.Status === 'Success') {
-          const po = res[0].PostOffice[0];
-          this.contactForm.patchValue({ city: po.District, state: po.State, country: 'India' });
-        } else {
-          this.pincodeError = 'Pincode not found.';
-        }
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        this.pincodeLoading = false;
-        this.pincodeError = 'Could not fetch pincode details.';
-        this.cdr.detectChanges();
+  const pincode = this.contactForm.get('postalCode')?.value;
+  if (!/^\d{6}$/.test(pincode)) return;
+  this.pincodeLoading = true;
+  this.pincodeError = '';
+  this.http.get<any[]>(`https://api.postalpincode.in/pincode/${pincode}`).subscribe({
+    next: (res) => {
+      this.pincodeLoading = false;
+      if (res[0]?.Status === 'Success') {
+        const postOffices = res[0].PostOffice;
+        const po = postOffices[0];
+
+        // Use the post office name as city (more specific than district)
+        // Try to find a post office with a meaningful name (not just the division)
+        const cityPo = postOffices.find((p: any) =>
+          p.BranchType === 'Head Post Office' || p.BranchType === 'Sub Post Office'
+        ) || po;
+
+        this.contactForm.patchValue({
+          city: cityPo.Name,      // actual post office / area name
+          state: po.State,
+          country: 'India'
+        });
+      } else {
+        this.pincodeError = 'Pincode not found.';
       }
-    });
+      this.cdr.detectChanges();
+    },
+    error: () => {
+      this.pincodeLoading = false;
+      this.pincodeError = 'Could not fetch pincode details.';
+      this.cdr.detectChanges();
+    }
+  });
+}
+
+  checkIfscBankMatch(): void {
+    const ifsc = this.bankForm.get('ifscCode')?.value?.toUpperCase();
+    const bank = this.bankForm.get('bankName')?.value?.toUpperCase();
+    if (!ifsc || !bank || ifsc.length < 4) { this.bankMismatchWarning = ''; return; }
+
+    const ifscPrefix = ifsc.substring(0, 4);
+    const bankKeywords: { [key: string]: string[] } = {
+      'SBIN': ['STATE BANK', 'SBI'],
+      'HDFC': ['HDFC'],
+      'ICIC': ['ICICI'],
+      'UTIB': ['AXIS'],
+      'PUNB': ['PUNJAB NATIONAL', 'PNB'],
+      'BKID': ['BANK OF INDIA', 'BOI'],
+      'BARB': ['BANK OF BARODA', 'BOB'],
+      'CNRB': ['CANARA'],
+      'UBIN': ['UNION BANK'],
+      'IOBA': ['INDIAN OVERSEAS'],
+      'SIBL': ['SOUTH INDIAN'],
+      'FDRL': ['FEDERAL'],
+      'KVBL': ['KARUR VYSYA', 'KVB'],
+      'CBIN': ['CENTRAL BANK'],
+      'IDIB': ['INDIAN BANK'],
+      'ALLA': ['ALLAHABAD'],
+      'YESB': ['YES BANK'],
+      'KKBK': ['KOTAK'],
+      'IDFC': ['IDFC'],
+      'RATN': ['RBL'],
+    };
+
+    const keywords = bankKeywords[ifscPrefix];
+    if (keywords) {
+      const matches = keywords.some(k => bank.includes(k));
+      this.bankMismatchWarning = matches ? '' :
+        `IFSC prefix "${ifscPrefix}" may not match "${this.bankForm.get('bankName')?.value}". Please verify.`;
+    } else {
+      this.bankMismatchWarning = '';
+    }
   }
 
   isInvalid(form: FormGroup, field: string): boolean {
@@ -257,7 +308,6 @@ export class CustomerEditComponent implements OnInit {
     this.submitting = true;
     this.errorMessage = '';
 
-    // Fix IFSC case before sending
     const bankData = {
       ...this.bankForm.value,
       ifscCode: this.bankForm.value.ifscCode?.toUpperCase()

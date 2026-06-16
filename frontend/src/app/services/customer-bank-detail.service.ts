@@ -20,14 +20,14 @@ export class CustomerBankDetailService {
   }
 
   createBankDetail(bank: CustomerBankDetail): Observable<any> {
-    return this.http.post(this.apiUrl, bank);
-  }
+  return this.http.post(this.apiUrl, bank, { responseType: 'text' });
+}
 
-  updateBankDetail(id: number, bank: CustomerBankDetail): Observable<any> {
-    return this.http.put(`${this.apiUrl}/${id}`, bank);
-  }
+updateBankDetail(id: number, bank: CustomerBankDetail): Observable<any> {
+  return this.http.put(`${this.apiUrl}/${id}`, bank, { responseType: 'text' });
+}
 
-  deleteBankDetail(id: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/${id}`);
-  }
+deleteBankDetail(id: number): Observable<any> {
+  return this.http.delete(`${this.apiUrl}/${id}`, { responseType: 'text' });
+}
 }

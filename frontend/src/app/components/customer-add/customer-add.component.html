@@ -75,11 +75,11 @@
       </div>
 
       <div class="form-group">
-        <label class="form-label">Occupation *</label>
-        <input formControlName="occupation" class="form-control"
-          [class.is-invalid]="isInvalid(customerForm, 'occupation')" />
-        <div *ngIf="isInvalid(customerForm, 'occupation')" class="form-error">{{ getError(customerForm, 'occupation') }}</div>
-      </div>
+          <label class="form-label">Occupation *</label>
+          <input formControlName="occupation" class="form-control"
+            [class.is-invalid]="isInvalid(customerForm, 'occupation')" />
+          <div *ngIf="isInvalid(customerForm, 'occupation')" class="form-error">{{ getError(customerForm, 'occupation') }}</div>
+        </div>
 
     </div>
   </div>
@@ -105,12 +105,16 @@
           <div *ngIf="isInvalid(bankForm, 'accountNumber')" class="form-error">{{ getError(bankForm, 'accountNumber') }}</div>
         </div>
         <div class="form-group">
-          <label class="form-label">IFSC Code * (e.g. SBIN0001234)</label>
-          <input formControlName="ifscCode" class="form-control" maxlength="11"
-            style="text-transform:uppercase"
-            [class.is-invalid]="isInvalid(bankForm, 'ifscCode')" />
-          <div *ngIf="isInvalid(bankForm, 'ifscCode')" class="form-error">{{ getError(bankForm, 'ifscCode') }}</div>
-        </div>
+  <label class="form-label">IFSC Code * (e.g. SBIN0001234)</label>
+  <input formControlName="ifscCode" class="form-control" maxlength="11"
+    style="text-transform:uppercase"
+    [class.is-invalid]="isInvalid(bankForm, 'ifscCode')"
+    (blur)="checkIfscBankMatch()" />
+  <div *ngIf="isInvalid(bankForm, 'ifscCode')" class="form-error">{{ getError(bankForm, 'ifscCode') }}</div>
+  <div *ngIf="bankMismatchWarning" class="form-error" style="color:var(--warning)">
+    ⚠ {{ bankMismatchWarning }}
+  </div>
+</div>
         <div class="form-group">
           <label class="form-label">Branch Name *</label>
           <input formControlName="branchName" class="form-control"

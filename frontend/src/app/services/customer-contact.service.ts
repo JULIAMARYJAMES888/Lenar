@@ -20,14 +20,14 @@ export class CustomerContactService {
   }
 
   createContact(contact: CustomerContact): Observable<any> {
-    return this.http.post(this.apiUrl, contact);
-  }
+  return this.http.post(this.apiUrl, contact, { responseType: 'text' });
+}
 
-  updateContact(id: number, contact: CustomerContact): Observable<any> {
-    return this.http.put(`${this.apiUrl}/${id}`, contact);
-  }
+updateContact(id: number, contact: CustomerContact): Observable<any> {
+  return this.http.put(`${this.apiUrl}/${id}`, contact, { responseType: 'text' });
+}
 
-  deleteContact(id: number): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/${id}`);
-  }
+deleteContact(id: number): Observable<any> {
+  return this.http.delete(`${this.apiUrl}/${id}`, { responseType: 'text' });
+}
 }

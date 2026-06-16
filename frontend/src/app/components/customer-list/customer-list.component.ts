@@ -17,7 +17,7 @@ export class CustomerListComponent implements OnInit {
   filteredCustomers: Customer[] = [];
 
   searchTerm = '';
-  filterStatus = '';
+  filterStatus = 'active'; // default: show only active
   sortPreset = '';
 
   sortColumn: keyof Customer | '' = '';
@@ -52,7 +52,7 @@ export class CustomerListComponent implements OnInit {
     });
   }
 
-  get totalCount():    number { return this.customers.length; }
+  get totalCount():    number { return this.customers.filter(c => c.isActive).length; }
   get activeCount():   number { return this.customers.filter(c => c.isActive).length; }
   get inactiveCount(): number { return this.customers.filter(c => !c.isActive).length; }
 
@@ -70,11 +70,14 @@ export class CustomerListComponent implements OnInit {
       );
     }
 
+    // Default: show only active unless filter says otherwise
     if (this.filterStatus === 'active')   result = result.filter(c => c.isActive);
     if (this.filterStatus === 'inactive') result = result.filter(c => !c.isActive);
-    if (this.filterStatus === 'male')     result = result.filter(c => c.gender?.toLowerCase() === 'male');
-    if (this.filterStatus === 'female')   result = result.filter(c => c.gender?.toLowerCase() === 'female');
-    if (this.filterStatus === 'other')    result = result.filter(c => c.gender?.toLowerCase() === 'other');
+    if (this.filterStatus === 'all')      { /* show all */ }
+    if (this.filterStatus === 'male')     result = result.filter(c => c.isActive && c.gender?.toLowerCase() === 'male');
+    if (this.filterStatus === 'female')   result = result.filter(c => c.isActive && c.gender?.toLowerCase() === 'female');
+    if (this.filterStatus === 'other')    result = result.filter(c => c.isActive && c.gender?.toLowerCase() === 'other');
+    if (this.filterStatus === '')         result = result.filter(c => c.isActive);
 
     if (this.sortColumn) {
       result.sort((a, b) => {
@@ -118,7 +121,7 @@ export class CustomerListComponent implements OnInit {
 
   clearFilters(): void {
     this.searchTerm = '';
-    this.filterStatus = '';
+    this.filterStatus = 'active';
     this.sortPreset = '';
     this.sortColumn = '';
     this.sortDirection = 'asc';
@@ -126,29 +129,48 @@ export class CustomerListComponent implements OnInit {
   }
 
   get hasFilters(): boolean {
-    return !!(this.searchTerm || this.filterStatus);
+    return !!(this.searchTerm || (this.filterStatus && this.filterStatus !== 'active'));
   }
 
   initials(c: Customer): string {
     return ((c.firstName?.[0] ?? '') + (c.lastName?.[0] ?? '')).toUpperCase();
   }
 
-  viewCustomer(id: number):   void { this.router.navigate(['/customers', id]); }
-  editCustomer(id: number):   void { this.router.navigate(['/customers/edit', id]); }
+  viewCustomer(id: number): void { this.router.navigate(['/customers', id]); }
+  editCustomer(id: number): void { this.router.navigate(['/customers/edit', id]); }
 
+  // Soft delete — set isActive to false instead of deleting
   deleteCustomer(id: number): void {
-    if (!confirm('Delete this customer? This cannot be undone.')) return;
-    this.customerService.deleteCustomer(id).subscribe({
-      next: () => {
-        this.customers = this.customers.filter(c => c.customerId !== id);
-        this.applyFilter();
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        console.error(err);
-        this.errorMessage = 'Failed to delete customer.';
-        this.cdr.detectChanges();
-      }
-    });
-  }
+  if (!confirm('Deactivate this customer? They will be hidden from the directory.')) return;
+
+  // First fetch the full customer object, then update
+  this.customerService.getCustomer(id).subscribe({
+    next: (customer) => {
+      const updated = {
+        ...customer,
+        isActive: false,
+        imageUrl: customer.imageUrl ?? ''
+      };
+
+      this.customerService.updateCustomer(id, updated).subscribe({
+        next: () => {
+          const idx = this.customers.findIndex(c => c.customerId === id);
+          if (idx !== -1) this.customers[idx] = { ...this.customers[idx], isActive: false };
+          this.applyFilter();
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          console.error(err);
+          this.errorMessage = 'Failed to deactivate customer.';
+          this.cdr.detectChanges();
+        }
+      });
+    },
+    error: (err) => {
+      console.error(err);
+      this.errorMessage = 'Failed to fetch customer details.';
+      this.cdr.detectChanges();
+    }
+  });
+}
 }
