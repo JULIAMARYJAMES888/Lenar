@@ -7,7 +7,7 @@ import { CustomerBankDetail } from '../models/customer-bank-detail.model';
   providedIn: 'root'
 })
 export class CustomerBankDetailService {
-  private readonly apiUrl = 'https://localhost:7273/api/CustomerBankDetails';
+  private readonly apiUrl = 'http://localhost:5013/api/CustomerBankDetails';
 
   constructor(private http: HttpClient) {}
 

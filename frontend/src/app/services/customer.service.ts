@@ -7,7 +7,7 @@ import { Customer } from '../models/customer.model';
   providedIn: 'root'
 })
 export class CustomerService {
-  private readonly apiUrl = 'https://localhost:7273/api/Customers';
+  private readonly apiUrl = 'http://localhost:5013/api/Customers';
 
   constructor(private http: HttpClient) {}
 

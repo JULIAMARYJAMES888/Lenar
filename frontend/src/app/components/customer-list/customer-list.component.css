@@ -17,3 +17,51 @@
 .customer-list input.form-control {
   max-width: 360px;
 }
+.custom-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 110%;
+  left: 0;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  z-index: 100;
+  min-width: 160px;
+  padding: .4rem 0;
+}
+
+.submenu {
+  left: 100%;
+  top: 0;
+}
+
+.dropdown-item {
+  padding: .5rem 1rem;
+  font-size: .88rem;
+  cursor: pointer;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.dropdown-item:hover {
+  background: var(--purple-50);
+  color: var(--purple-600);
+}
+.dropdown-menu {
+  position: absolute;
+  top: 110%;
+  left: 0;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  z-index: 1000;
+  min-width: 160px;
+  padding: .4rem 0;
+  display: block !important;
+}
