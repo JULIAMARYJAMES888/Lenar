@@ -6,22 +6,13 @@
       <h1>Customer Directory</h1>
       <p>Manage profiles, banking details and account associations.</p>
     </div>
-    <a routerLink="/customers/add" class="btn btn-gold">+ Add Customer</a>
-  </div>
+<a routerLink="/customers/add" class="btn btn-gold" style="font-size:1rem;padding:.75rem 1.5rem">+ Add Customer</a>  </div>
 
   <!-- Stat Cards -->
   <div class="stat-cards">
     <div class="stat-card total">
       <div class="stat-label">Active Customers</div>
       <div class="stat-value">{{ activeCount }}</div>
-    </div>
-    <div class="stat-card active">
-      <div class="stat-label">Total Customers</div>
-      <div class="stat-value">{{ customers.length }}</div>
-    </div>
-    <div class="stat-card inactive">
-      <div class="stat-label">Inactive</div>
-      <div class="stat-value">{{ inactiveCount }}</div>
     </div>
   </div>
 
@@ -44,20 +35,56 @@
       />
     </div>
 
-    <select class="filter-select" [(ngModel)]="filterStatus" (ngModelChange)="applyFilter()">
-     <option value="active">Filter By</option>
-     <option value="male">Male</option>
-     <option value="female">Female</option>
-     <option value="other">Other</option>
-    </select>
+    <!-- Filter Dropdown -->
+    <div class="custom-dropdown" (click)="$event.stopPropagation()">
+      <button class="filter-select" (click)="toggleFilter(); $event.stopPropagation()">
+        {{ filterLabel }} ▾
+      </button>
+      <div class="dropdown-menu" *ngIf="filterOpen && !filterSub">
+        <div class="dropdown-item" (click)="selectFilter('gender')">By Gender ›</div>
+      </div>
+      <div class="dropdown-menu" *ngIf="filterOpen && filterSub === 'gender'">
+        <div class="dropdown-item" (click)="selectFilter('')">‹ Back</div>
+        <div class="dropdown-item" (click)="applyFilterOption('male')">Male</div>
+        <div class="dropdown-item" (click)="applyFilterOption('female')">Female</div>
+        <div class="dropdown-item" (click)="applyFilterOption('other')">Other</div>
+        <div class="dropdown-item" (click)="applyFilterOption('active')">Clear Filter</div>
+      </div>
+    </div>
 
-    <select class="filter-select" [(ngModel)]="sortPreset" (ngModelChange)="applyPresetSort()">
-      <option value="">Sort By</option>
-      <option value="name-asc">Name A → Z</option>
-      <option value="name-desc">Name Z → A</option>
-      <option value="id-asc">ID Ascending</option>
-      <option value="id-desc">ID Descending</option>
-    </select>
+    <!-- Sort Dropdown -->
+    <!-- Sort Dropdown -->
+<div class="custom-dropdown" (click)="$event.stopPropagation()">
+  <button class="filter-select" (click)="toggleSort(); $event.stopPropagation()">
+    {{ sortLabel }} ▾
+  </button>
+  <div class="dropdown-menu" *ngIf="sortOpen && !sortField">
+    <div class="dropdown-item" (click)="selectSortField('name')">By Name ›</div>
+    <div class="dropdown-item" (click)="selectSortField('id')">By ID ›</div>
+    <div class="dropdown-item" (click)="selectSortField('created')">By Created Date ›</div>
+    <div class="dropdown-item" (click)="selectSortField('updated')">By Updated Date ›</div>
+  </div>
+  <div class="dropdown-menu" *ngIf="sortOpen && sortField === 'name'">
+    <div class="dropdown-item" (click)="sortField = ''">‹ Back</div>
+    <div class="dropdown-item" (click)="applySortOption('asc')">A → Z</div>
+    <div class="dropdown-item" (click)="applySortOption('desc')">Z → A</div>
+  </div>
+  <div class="dropdown-menu" *ngIf="sortOpen && sortField === 'id'">
+    <div class="dropdown-item" (click)="sortField = ''">‹ Back</div>
+    <div class="dropdown-item" (click)="applySortOption('asc')">Ascending</div>
+    <div class="dropdown-item" (click)="applySortOption('desc')">Descending</div>
+  </div>
+  <div class="dropdown-menu" *ngIf="sortOpen && sortField === 'created'">
+    <div class="dropdown-item" (click)="sortField = ''">‹ Back</div>
+    <div class="dropdown-item" (click)="applySortOption('asc')">Oldest First</div>
+    <div class="dropdown-item" (click)="applySortOption('desc')">Newest First</div>
+  </div>
+  <div class="dropdown-menu" *ngIf="sortOpen && sortField === 'updated'">
+    <div class="dropdown-item" (click)="sortField = ''">‹ Back</div>
+    <div class="dropdown-item" (click)="applySortOption('asc')">Least Recently</div>
+    <div class="dropdown-item" (click)="applySortOption('desc')">Recently Updated</div>
+  </div>
+</div>
 
     <span style="margin-left:auto;font-size:.82rem;color:var(--text-muted);font-weight:500">
       {{ filteredCustomers.length }} result{{ filteredCustomers.length !== 1 ? 's' : '' }}
@@ -99,15 +126,9 @@
           <th (click)="setSort('customerId')" [class.sorted]="sortColumn==='customerId'">
             ID <span class="sort-icon">{{ sortIcon('customerId') }}</span>
           </th>
-          <th (click)="setSort('firstName')" [class.sorted]="sortColumn==='firstName'">
-            Customer <span class="sort-icon">{{ sortIcon('firstName') }}</span>
-          </th>
-          <th (click)="setSort('occupation')" [class.sorted]="sortColumn==='occupation'">
-            Occupation <span class="sort-icon">{{ sortIcon('occupation') }}</span>
-          </th>
-          <th (click)="setSort('gender')" [class.sorted]="sortColumn==='gender'">
-            Gender <span class="sort-icon">{{ sortIcon('gender') }}</span>
-          </th>
+          <th>Customer</th>
+          <th>Occupation</th>
+          <th>Gender</th>
           <th style="text-align:right">Actions</th>
         </tr>
       </thead>
@@ -123,7 +144,7 @@
           <td>
             <div style="display:flex;align-items:center;gap:.75rem">
               <img *ngIf="c.imageUrl"
-                   [src]="'https://localhost:7273' + c.imageUrl"
+                   [src]="'http://localhost:5013' + c.imageUrl"
                    class="avatar" alt="photo" />
               <div *ngIf="!c.imageUrl" class="avatar-placeholder">{{ initials(c) }}</div>
               <div>
@@ -150,13 +171,6 @@
         </tr>
       </tbody>
     </table>
-
-    <!-- Footer -->
-    <div *ngIf="!loading && filteredCustomers.length > 0"
-         style="padding:.85rem 1.25rem;font-size:.8rem;color:var(--text-muted);
-                border-top:1px solid var(--border);font-weight:500">
-      Showing {{ filteredCustomers.length }} of {{ customers.length }} customers
-    </div>
 
   </div>
 

@@ -7,7 +7,7 @@ import { CustomerContact } from '../models/customer-contact.model';
   providedIn: 'root'
 })
 export class CustomerContactService {
-  private readonly apiUrl = 'https://localhost:7273/api/CustomerContacts';
+  private readonly apiUrl = 'http://localhost:5013/api/CustomerContacts';
 
   constructor(private http: HttpClient) {}
 

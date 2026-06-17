@@ -60,7 +60,7 @@
             [class.is-invalid]="isInvalid(customerForm, 'dateOfBirth')" />
           <div *ngIf="isInvalid(customerForm, 'dateOfBirth')" class="form-error">{{ getError(customerForm, 'dateOfBirth') }}</div>
         </div>
-        <div class="form-group">
+       <div class="form-group">
           <label class="form-label">Gender</label>
           <select formControlName="gender" class="form-select"
             [class.is-invalid]="isInvalid(customerForm, 'gender')">
@@ -71,16 +71,14 @@
           </select>
           <div *ngIf="isInvalid(customerForm, 'gender')" class="form-error">{{ getError(customerForm, 'gender') }}</div>
         </div>
-        
-      </div>
-
-      <div class="form-group">
+        <div class="form-group">
           <label class="form-label">Occupation *</label>
           <input formControlName="occupation" class="form-control"
             [class.is-invalid]="isInvalid(customerForm, 'occupation')" />
           <div *ngIf="isInvalid(customerForm, 'occupation')" class="form-error">{{ getError(customerForm, 'occupation') }}</div>
         </div>
 
+      </div>
     </div>
   </div>
 

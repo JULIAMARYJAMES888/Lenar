@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -17,7 +17,7 @@ export class CustomerListComponent implements OnInit {
   filteredCustomers: Customer[] = [];
 
   searchTerm = '';
-  filterStatus = 'active'; // default: show only active
+  filterStatus = 'active';
   sortPreset = '';
 
   sortColumn: keyof Customer | '' = '';
@@ -26,11 +26,26 @@ export class CustomerListComponent implements OnInit {
   loading = false;
   errorMessage = '';
 
+  // Dropdown state
+  filterOpen = false;
+  filterSub = '';
+  filterLabel = 'Filter By';
+
+  sortOpen = false;
+  sortField = '';
+  sortLabel = 'Sort By';
+
   constructor(
     private customerService: CustomerService,
     private router: Router,
     private cdr: ChangeDetectorRef
   ) {}
+
+  @HostListener('document:click')
+  closeDropdowns(): void {
+    this.filterOpen = false;
+    this.sortOpen = false;
+  }
 
   ngOnInit(): void { this.loadCustomers(); }
 
@@ -70,7 +85,6 @@ export class CustomerListComponent implements OnInit {
       );
     }
 
-    // Default: show only active unless filter says otherwise
     if (this.filterStatus === 'active')   result = result.filter(c => c.isActive);
     if (this.filterStatus === 'inactive') result = result.filter(c => !c.isActive);
     if (this.filterStatus === 'all')      { /* show all */ }
@@ -95,11 +109,15 @@ export class CustomerListComponent implements OnInit {
 
   applyPresetSort(): void {
     switch (this.sortPreset) {
-      case 'name-asc':  this.sortColumn = 'firstName';  this.sortDirection = 'asc';  break;
-      case 'name-desc': this.sortColumn = 'firstName';  this.sortDirection = 'desc'; break;
-      case 'id-asc':    this.sortColumn = 'customerId'; this.sortDirection = 'asc';  break;
-      case 'id-desc':   this.sortColumn = 'customerId'; this.sortDirection = 'desc'; break;
-      default:          this.sortColumn = '';            this.sortDirection = 'asc';
+      case 'name-asc':     this.sortColumn = 'firstName';  this.sortDirection = 'asc';  break;
+      case 'name-desc':    this.sortColumn = 'firstName';  this.sortDirection = 'desc'; break;
+      case 'id-asc':       this.sortColumn = 'customerId'; this.sortDirection = 'asc';  break;
+      case 'id-desc':      this.sortColumn = 'customerId'; this.sortDirection = 'desc'; break;
+      case 'created-asc':  this.sortColumn = 'createdAt';  this.sortDirection = 'asc';  break;
+      case 'created-desc': this.sortColumn = 'createdAt';  this.sortDirection = 'desc'; break;
+      case 'updated-asc':  this.sortColumn = 'updatedAt';  this.sortDirection = 'asc';  break;
+      case 'updated-desc': this.sortColumn = 'updatedAt';  this.sortDirection = 'desc'; break;
+      default:             this.sortColumn = '';            this.sortDirection = 'asc';
     }
     this.applyFilter();
   }
@@ -125,6 +143,8 @@ export class CustomerListComponent implements OnInit {
     this.sortPreset = '';
     this.sortColumn = '';
     this.sortDirection = 'asc';
+    this.filterLabel = 'Filter By';
+    this.sortLabel = 'Sort By';
     this.applyFilter();
   }
 
@@ -139,38 +159,74 @@ export class CustomerListComponent implements OnInit {
   viewCustomer(id: number): void { this.router.navigate(['/customers', id]); }
   editCustomer(id: number): void { this.router.navigate(['/customers/edit', id]); }
 
-  // Soft delete — set isActive to false instead of deleting
-  deleteCustomer(id: number): void {
-  if (!confirm('Deactivate this customer? They will be hidden from the directory.')) return;
+  toggleFilter(): void {
+    this.filterOpen = !this.filterOpen;
+    this.sortOpen = false;
+    this.filterSub = '';
+  }
 
-  // First fetch the full customer object, then update
-  this.customerService.getCustomer(id).subscribe({
-    next: (customer) => {
-      const updated = {
-        ...customer,
-        isActive: false,
-        imageUrl: customer.imageUrl ?? ''
-      };
+  toggleSort(): void {
+    this.sortOpen = !this.sortOpen;
+    this.filterOpen = false;
+    this.sortField = '';
+  }
 
-      this.customerService.updateCustomer(id, updated).subscribe({
-        next: () => {
-          const idx = this.customers.findIndex(c => c.customerId === id);
-          if (idx !== -1) this.customers[idx] = { ...this.customers[idx], isActive: false };
-          this.applyFilter();
-          this.cdr.detectChanges();
-        },
-        error: (err) => {
-          console.error(err);
-          this.errorMessage = 'Failed to deactivate customer.';
-          this.cdr.detectChanges();
-        }
-      });
-    },
-    error: (err) => {
-      console.error(err);
-      this.errorMessage = 'Failed to fetch customer details.';
-      this.cdr.detectChanges();
-    }
-  });
+  selectFilter(sub: string): void { this.filterSub = sub; }
+
+  applyFilterOption(value: string): void {
+    this.filterStatus = value;
+    this.filterLabel = value === 'active' ? 'Filter By' :
+                       value.charAt(0).toUpperCase() + value.slice(1);
+    this.filterOpen = false;
+    this.filterSub = '';
+    this.applyFilter();
+  }
+
+  selectSortField(field: string): void { this.sortField = field; }
+
+  applySortOption(dir: 'asc' | 'desc'): void {
+  const labels: Record<string, Record<string, string>> = {
+    name:    { asc: 'Name A → Z',         desc: 'Name Z → A' },
+    id:      { asc: 'ID Ascending',        desc: 'ID Descending' },
+    created: { asc: 'Oldest First',        desc: 'Newest First' },
+    updated: { asc: 'Least Recently',      desc: 'Recently Updated' }
+  };
+  this.sortLabel = labels[this.sortField][dir];
+  this.sortPreset = `${this.sortField}-${dir}`;
+  this.sortOpen = false;
+  this.sortField = '';
+  this.applyPresetSort();
 }
+  deleteCustomer(id: number): void {
+    if (!confirm('Deactivate this customer? They will be hidden from the directory.')) return;
+
+    this.customerService.getCustomer(id).subscribe({
+      next: (customer) => {
+        const updated = {
+          ...customer,
+          isActive: false,
+          imageUrl: customer.imageUrl ?? ''
+        };
+
+        this.customerService.updateCustomer(id, updated).subscribe({
+          next: () => {
+            const idx = this.customers.findIndex(c => c.customerId === id);
+            if (idx !== -1) this.customers[idx] = { ...this.customers[idx], isActive: false };
+            this.applyFilter();
+            this.cdr.detectChanges();
+          },
+          error: (err) => {
+            console.error(err);
+            this.errorMessage = 'Failed to deactivate customer.';
+            this.cdr.detectChanges();
+          }
+        });
+      },
+      error: (err) => {
+        console.error(err);
+        this.errorMessage = 'Failed to fetch customer details.';
+        this.cdr.detectChanges();
+      }
+    });
+  }
 }
