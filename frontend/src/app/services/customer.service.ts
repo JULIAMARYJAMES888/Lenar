@@ -76,16 +76,16 @@ export class CustomerService {
     );
   }
 
-  uploadPhoto(id: number, formData: FormData): Observable<string> {
-    console.log('Uploading photo for customer:', id);
-    return this.http.post<string>(`${this.apiUrl}/${id}/UploadPhoto`, formData).pipe(
-      tap((url) => {
-        console.log('✓ Photo uploaded:', url);
-      }),
-      catchError((error) => {
-        console.error('✗ Error uploading photo:', error);
-        throw error;
-      })
-    );
-  }
+  uploadPhoto(id: number, formData: FormData): Observable<any> {
+  console.log('Uploading photo for customer:', id);
+  return this.http.post(`${this.apiUrl}/${id}/UploadPhoto`, formData, { responseType: 'text' }).pipe(
+    tap((url) => {
+      console.log('✓ Photo uploaded:', url);
+    }),
+    catchError((error) => {
+      console.error('✗ Error uploading photo:', error);
+      throw error;
+    })
+  );
+}
 }

@@ -45,12 +45,10 @@
     </div>
 
     <select class="filter-select" [(ngModel)]="filterStatus" (ngModelChange)="applyFilter()">
-      <option value="active">Active Only</option>
-      <option value="all">All Customers</option>
-      <option value="inactive">Inactive Only</option>
-      <option value="male">Male</option>
-      <option value="female">Female</option>
-      <option value="other">Other</option>
+     <option value="active">Filter By</option>
+     <option value="male">Male</option>
+     <option value="female">Female</option>
+     <option value="other">Other</option>
     </select>
 
     <select class="filter-select" [(ngModel)]="sortPreset" (ngModelChange)="applyPresetSort()">

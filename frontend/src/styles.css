@@ -430,18 +430,17 @@ tbody tr:hover { background: var(--purple-50); }
 .search-wrap .form-control { padding-left: 2.4rem; }
 
 .filter-select {
-  padding: .6rem 1rem;
+  padding: .6rem 2.2rem .6rem 1rem;
   font-family: var(--font-body);
   font-size: .875rem; font-weight: 500;
   color: var(--text-primary);
-  background: var(--surface);
+  background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236B5B8A' d='M1 1l5 5 5-5'/%3E%3C/svg%3E") no-repeat right 0.85rem center;
   border: 2px solid var(--border);
   border-radius: var(--radius-sm);
   outline: none;
   cursor: pointer;
   transition: border-color .15s;
   appearance: none;
-  padding-right: 2rem;
 }
 .filter-select:focus { border-color: var(--purple-500); }
 
